@@ -1,14 +1,28 @@
-<programa> ::= <instrução> ";" <programa> | <instrução> ";"
-<instrução> ::= <atribuição> | <declaração> | <condicional> | <laço> | <impressão>
-<atribuição> ::= <identificador> "=" <expressão>
-<declaração> ::= "int" <identificador> | "float" <identificador>
-<condicional> ::= "if" "(" <condição> ")" "{" <programa> "}"
-<laço> ::= "while" "(" <condição> ")" "{" <programa> "}"
-<impressão> ::= "print" "(" <identificador> ")"
-<expressão> ::= <termo> | <termo> <operador> <expressão>
-<condição> ::= <expressão> <operador-relacional> <expressão>
-<termo> ::= <identificador> | <número>
-<identificador> ::= [a-zA-Z_][a-zA-Z0-9_]*
-<número> ::= [0-9]+ | [0-9]+"."[0-9]+
+<programa> ::= <instrucao> ";" <programa> | <instrucao> ";"
+<instrucao> ::= <atribuicao> | <declaracao> | <condicional> | <laco> | <impressao>
+<atribuicao> ::= <identificador> "=" <expressao>
+<declaracao> ::= "int" <identificador> | "float" <identificador>
+<condicional> ::= "if" "(" <condicao> ")" "{" <programa> "}"
+<laco> ::= "while" "(" <condicao> ")" "{" <programa> "}"
+<impressao> ::= "print" "(" <identificador> ")"
+<expressao> ::= <termo> | <termo> <operador> <expressao>
+<condicao> ::= <expressao> <operador_relacional> <expressao>
+<termo> ::= <identificador> | <numero>
+
+<identificador> ::= <letra> <identificador_aux>
+<identificador_aux> ::= <letra_digito> | <letra_digito> <identificador_aux>
+
+<numero> ::= <digito> | <digito> "." <digito>
+
+<letra_digito> ::= <letra> | <digito>
+<letra> ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" |
+            "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" |
+            "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" |
+            "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" |
+            "_"
+
+<digito> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
 <operador> ::= "+" | "-" | "*" | "/"
-<operador-relacional> ::= ">" | "<" | "==" | "!=" | ">=" | "<="
+
+<operador_relacional> ::= ">" | "<" | "==" | "!=" | ">=" | "<="
