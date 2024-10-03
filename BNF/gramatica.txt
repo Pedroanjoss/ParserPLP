@@ -1,32 +1,50 @@
-<programa> ::= <comentario> <programa> | <instrucao> ";" <programa> | <instrucao> ";"
+<programa> ::= <comentario> <programa> 
+             | <instrucao> ";" <programa> 
+             | <instrucao> ";"
 
 <comentario> ::= "#" <texto_comentario>
+
 <texto_comentario> ::= <letra_digito> | <letra_digito> <texto_comentario>
 
-<instrucao> ::= <atribuicao> | <declaracao> | <condicional> | <laco> | <impressao>
+<instrucao> ::= <atribuicao> 
+              | <declaracao> 
+              | <condicional> 
+              | <laco> 
+              | <impressao>
 
 <atribuicao> ::= <identificador> "=" <expressao>
 
-<declaracao> ::= "int" <identificador> | "float" <identificador>
+<declaracao> ::= <tipo> <identificador_lista>
+
+<tipo> ::= "int" | "float"
+
+<identificador_lista> ::= <identificador> 
+                        | <identificador> "," <identificador_lista>
 
 <condicional> ::= "if" "(" <condicao> ")" "{" <programa> "}"
 
 <laco> ::= "while" "(" <condicao> ")" "{" <programa> "}"
 
-<impressao> ::= "print" "(" <identificador> ")"
+<impressao> ::= "print" "(" <identificador> ")" 
+              | "print" <identificador>
 
-<expressao> ::= <termo> | <termo> <operador> <expressao>
+<expressao> ::= <termo> 
+              | <termo> <operador> <expressao>
 
 <condicao> ::= <expressao> <operador_relacional> <expressao>
 
 <termo> ::= <identificador> | <numero>
 
 <identificador> ::= <letra> <identificador_aux>
-<identificador_aux> ::= <letra_digito> | <letra_digito> <identificador_aux>
 
-<numero> ::= <digito> | <digito> "." <digito>
+<identificador_aux> ::= <letra_digito> 
+                      | <letra_digito> <identificador_aux>
+
+<numero> ::= <digito> 
+           | <digito> "." <digito>
 
 <letra_digito> ::= <letra> | <digito>
+
 <letra> ::= [a-z] | [A-Z]
 
 <digito> ::= [0-9]

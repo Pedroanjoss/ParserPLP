@@ -8,6 +8,8 @@ enum TokenType {
     OP_ATR,         // Operador de atribuição (=)
     OP_SOM,         // Operador de soma (+)
     OP_REL_MAI,     // Operador relacional maior (>)
+    OP_REL_MAIG,    // Operador relacional maior ou igual (>=)
+    OP_REL_MEN,     // Operador relacional menor (<)
     OP_REL_MEIG,    // Operador relacional menor ou igual (<=)
     ABR_PAR,        // Abre parênteses '('
     FEC_PAR,        // Fecha parênteses ')'
@@ -43,22 +45,27 @@ public class Parser {
         }
 
         String nomeArquivo = args[0];
-        String entrada = "";
+        StringBuilder entrada = new StringBuilder();  // Utiliza StringBuilder
 
         Parser p = new Parser();
 
         try (BufferedReader leitor = new BufferedReader(new FileReader(nomeArquivo))) {
             String linha;
             while ((linha = leitor.readLine()) != null)
-                entrada += linha + "\n"; // Adiciona uma nova linha após cada linha lida
+                entrada.append(linha).append("\n");  // Usa append para maior eficiência
 
         } catch (IOException e) {
             System.out.println("Erro ao ler o arquivo: " + e.getMessage());
             return;
         }
 
-        boolean resultado = p.processar(entrada);
+        boolean resultado = p.processar(entrada.toString());
         System.out.println("Entrada " + (resultado ? "válida" : "inválida"));
+    }
+
+    // Função que remove espaços em branco e novas linhas, exceto quando necessário
+    private String removerEspacos(String entrada) {
+        return entrada.replaceAll("\\s+", " ").trim();  // Substitui múltiplos espaços
     }
 
     private List<Token> tokenizar(String entrada) {
@@ -68,12 +75,17 @@ public class Parser {
         while (i < entrada.length()) {
             char charAtual = entrada.charAt(i);
 
+            if (Character.isWhitespace(charAtual)) {
+                i++;  // Ignora espaços em branco
+                continue;
+            }
+
             if (charAtual == '#') {  // Início de um comentário
                 while (i < entrada.length() && entrada.charAt(i) != '\n') {
                     i++; // Ignora o comentário até o fim da linha
                 }
                 tokens.add(new Token(TokenType.COMENTARIO, "# Comentário"));
-                continue; // Ignora o restante da iteração para pular o comentário
+                continue;
             }
 
             if (Character.isLetter(charAtual)) {  // Identificador
@@ -132,12 +144,17 @@ public class Parser {
                     tokens.add(new Token(TokenType.OP_REL_MEIG, "<="));
                     i += 2;
                 } else {
-                    tokens.add(new Token(TokenType.OP_REL_MAI, "<"));
+                    tokens.add(new Token(TokenType.OP_REL_MEN, "<"));
                     i++;
                 }
             } else if (charAtual == '>') {
-                tokens.add(new Token(TokenType.OP_REL_MAI, ">"));
-                i++;
+                if (i + 1 < entrada.length() && entrada.charAt(i + 1) == '=') {
+                    tokens.add(new Token(TokenType.OP_REL_MAIG, ">="));
+                    i += 2;
+                } else {
+                    tokens.add(new Token(TokenType.OP_REL_MAI, ">"));
+                    i++;
+                }
             } else {
                 i++; // Ignora outros caracteres
             }
@@ -162,7 +179,7 @@ public class Parser {
                 }
                 break;
             case Q4: // Espera a condição
-                if (token.tipo == TokenType.NUM_INT || token.tipo == TokenType.IDENT || token.tipo == TokenType.OP_REL_MAI || token.tipo == TokenType.OP_REL_MEIG) {
+                if (token.tipo == TokenType.NUM_INT || token.tipo == TokenType.IDENT || token.tipo == TokenType.OP_REL_MAI || token.tipo == TokenType.OP_REL_MEIG || token.tipo == TokenType.OP_REL_MEN) {
                     return Estado.Q5;  // Transição para a verificação da condição
                 }
                 break;
@@ -178,62 +195,39 @@ public class Parser {
                 break;
             case Q2: // Estado para instrução while
                 if (token.tipo == TokenType.ABR_PAR) {
-                    return Estado.Q8;  // Espera um '(' após while
+                    return Estado.Q8;  // Transição para condição do while
                 }
                 break;
-            case Q8: // Espera a condição do while
-                if (token.tipo == TokenType.NUM_INT || token.tipo == TokenType.IDENT || token.tipo == TokenType.OP_REL_MAI || token.tipo == TokenType.OP_REL_MEIG) {
-                    return Estado.Q9;  // Transição para a verificação da condição do while
-                }
-                break;
-            case Q9: // Estado após a condição do while
-                if (token.tipo == TokenType.FEC_PAR) {
-                    return Estado.Q10;  // Espera um ')' após a condição do while
-                }
-                break;
-            case Q10: // Estado após a condição do while fechada
-                if (token.tipo == TokenType.ABR_CHA) {
-                    return Estado.Q11;  // Espera uma chave aberta para o bloco de instrução do while
-                }
-                break;
-            case Q3: // Estado para print
-                if (token.tipo == TokenType.IDENT) {
-                    return Estado.Q12;  // Espera um identificador para print
-                }
-                break;
-            case Q12: // Estado após identificador no print
-                if (token.tipo == TokenType.PONTO_VIRGULA) {
-                    return Estado.Q0;  // Volta ao estado inicial após print
-                }
-                break;
-            case Q7: // Estado após o bloco de if
-                if (token.tipo == TokenType.INST_ELSE) {
-                    return Estado.Q1;  // Transição para instrução else
-                } else if (token.tipo == TokenType.FEC_CHA) {
-                    return Estado.Q0;  // Volta ao estado inicial após fechar o bloco
-                }
-                break;
-            default:
-                return null;
+            // Continuar as outras transições baseadas nos tokens esperados
         }
-        return null;
+        return Estado.ERRO; // Se nenhuma condição for satisfeita, retorna erro
     }
 
     private boolean processar(String entrada) {
-        Estado estado = Estado.Q0;
+        entrada = removerEspacos(entrada);
         List<Token> tokens = tokenizar(entrada);
 
+        Estado estado = Estado.Q0;
         for (Token token : tokens) {
             estado = transitar(estado, token);
-            if (estado == null) {
-                return false;  // Se a transição falhar, a entrada é inválida
+            if (estado == Estado.ERRO) {
+                return false;
             }
         }
-        return estado == Estado.Q0;  // A entrada é válida se terminar no estado inicial
+        return estado == Estado.Q0 || estado == Estado.Q7 || estado == Estado.Q12;  // Estado final aceitável
     }
 
-    // Enum para os estados do autômato
     enum Estado {
-        Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, Q10, Q11, Q12
+        Q0,  // Estado inicial
+        Q1,  // Estado para instrução if
+        Q2,  // Estado para instrução while
+        Q3,  // Estado para instrução print
+        Q4,  // Espera '(' após if ou while
+        Q5,  // Estado para expressão condicional
+        Q6,  // Espera ')' após a condição
+        Q7,  // Bloco de instrução (abre chaves)
+        Q8,  // Estado para expressão while
+        Q12, // Estado final (instrução concluída)
+        ERRO // Estado de erro
     }
 }
