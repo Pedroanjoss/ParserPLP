@@ -166,42 +166,105 @@ public class Parser {
         switch (estado) {
             case Q0:
                 if (token.tipo == TokenType.INST_IF) {
-                    return Estado.Q1;  // Transição para o estado de instrução if
+                    return Estado.Q1;  // Instrução if
                 } else if (token.tipo == TokenType.INST_WHILE) {
-                    return Estado.Q2;  // Transição para o estado de instrução while
+                    return Estado.Q2;  // Instrução while
                 } else if (token.tipo == TokenType.INST_PRINT) {
-                    return Estado.Q3;  // Transição para o estado de print
+                    return Estado.Q3;  // Instrução print
+                } else if (token.tipo == TokenType.IDENT) {
+                    return Estado.Q9;  // Instrução de atribuição
+                } else if (token.tipo == TokenType.TIPO_INT || token.tipo == TokenType.TIPO_FLOAT) {
+                    return Estado.Q10; // Declaração de variável
                 }
                 break;
-            case Q1: // Estado para instrução if
+                
+            case Q1: // Instrução if
                 if (token.tipo == TokenType.ABR_PAR) {
-                    return Estado.Q4;  // Espera um '(' após if
+                    return Estado.Q4;  // Espera '(' após if
                 }
                 break;
+                
+            case Q2: // Instrução while
+                if (token.tipo == TokenType.ABR_PAR) {
+                    return Estado.Q4;  // Espera '(' após while
+                }
+                break;
+                
+            case Q3: // Instrução print
+                if (token.tipo == TokenType.ABR_PAR) {
+                    return Estado.Q11; // Espera '(' após print
+                }
+                break;
+                
             case Q4: // Espera a condição
-                if (token.tipo == TokenType.NUM_INT || token.tipo == TokenType.IDENT || token.tipo == TokenType.OP_REL_MAI || token.tipo == TokenType.OP_REL_MEIG || token.tipo == TokenType.OP_REL_MEN) {
-                    return Estado.Q5;  // Transição para a verificação da condição
+                if (token.tipo == TokenType.NUM_INT || token.tipo == TokenType.IDENT) {
+                    return Estado.Q5;  // Transição para verificar a expressão condicional
                 }
                 break;
-            case Q5: // Estado após a condição
-                if (token.tipo == TokenType.FEC_PAR) {
-                    return Estado.Q6;  // Espera um ')' após a condição
+                
+            case Q5: // Espera um operador relacional
+                if (token.tipo == TokenType.OP_REL_MAI || token.tipo == TokenType.OP_REL_MAIG || token.tipo == TokenType.OP_REL_MEN || token.tipo == TokenType.OP_REL_MEIG) {
+                    return Estado.Q6;  // Espera o segundo operando
                 }
                 break;
-            case Q6: // Estado após a condição fechada
+                
+            case Q6: // Espera o segundo operando
+                if (token.tipo == TokenType.NUM_INT || token.tipo == TokenType.IDENT) {
+                    return Estado.Q7;  // Verificação da condição completa
+                }
+                break;
+                
+            case Q7: // Espera chave aberta '{'
                 if (token.tipo == TokenType.ABR_CHA) {
-                    return Estado.Q7;  // Espera uma chave aberta para o bloco de instrução
+                    return Estado.Q12;  // Bloco de instrução
                 }
                 break;
-            case Q2: // Estado para instrução while
-                if (token.tipo == TokenType.ABR_PAR) {
-                    return Estado.Q8;  // Transição para condição do while
+                
+            case Q9: // Instrução de atribuição
+                if (token.tipo == TokenType.OP_ATR) {
+                    return Estado.Q13; // Espera a expressão após o '='
                 }
                 break;
-            // Continuar as outras transições baseadas nos tokens esperados
+                
+            case Q10: // Declaração de variável
+                if (token.tipo == TokenType.IDENT) {
+                    return Estado.Q14; // Espera o identificador da variável
+                }
+                break;
+                
+            case Q11: // Espera o conteúdo dentro de 'print'
+                if (token.tipo == TokenType.IDENT || token.tipo == TokenType.NUM_INT) {
+                    return Estado.Q15; // Conteúdo para print
+                }
+                break;
+                
+            case Q12: // Dentro de um bloco de instrução (chaves)
+                if (token.tipo == TokenType.FEC_CHA) {
+                    return Estado.Q0;  // Fecha o bloco de instrução
+                }
+                break;
+                
+            case Q13: // Espera o valor de atribuição após '='
+                if (token.tipo == TokenType.NUM_INT || token.tipo == TokenType.IDENT) {
+                    return Estado.Q0;  // Atribuição completa
+                }
+                break;
+                
+            case Q14: // Declaração de variável
+                if (token.tipo == TokenType.PONTO_VIRGULA) {
+                    return Estado.Q0;  // Declaração completa
+                }
+                break;
+                
+            case Q15: // Print
+                if (token.tipo == TokenType.FEC_PAR) {
+                    return Estado.Q0;  // Conclui a instrução de print
+                }
+                break;
         }
-        return Estado.ERRO; // Se nenhuma condição for satisfeita, retorna erro
+        return Estado.ERRO; // Estado de erro se nenhum padrão for atendido
     }
+    
 
     private boolean processar(String entrada) {
         entrada = removerEspacos(entrada);
@@ -227,7 +290,13 @@ public class Parser {
         Q6,  // Espera ')' após a condição
         Q7,  // Bloco de instrução (abre chaves)
         Q8,  // Estado para expressão while
+        Q9,
+        Q10,
+        Q11,
         Q12, // Estado final (instrução concluída)
+        Q13,
+        Q14,
+        Q15,
         ERRO // Estado de erro
     }
 }
