@@ -4,7 +4,8 @@
 
 <comentario> ::= "#" <texto_comentario>
 
-<texto_comentario> ::= <letra_digito> | <letra_digito> <texto_comentario>
+<texto_comentario> ::= <letra_digito> 
+                     | <letra_digito> <texto_comentario>
 
 <instrucao> ::= <atribuicao> 
               | <declaracao> 
@@ -21,7 +22,8 @@
 <identificador_lista> ::= <identificador> 
                         | <identificador> "," <identificador_lista>
 
-<condicional> ::= "if" "(" <condicao> ")" "{" <programa> "}"
+<condicional> ::= "if" "(" <condicao> ")" "{" <programa> "}" 
+                | "if" "(" <condicao> ")" "{" <programa> "}" "else" "{" <programa> "}"
 
 <laco> ::= "while" "(" <condicao> ")" "{" <programa> "}"
 
