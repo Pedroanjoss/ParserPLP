@@ -1,24 +1,72 @@
-#em Graphviz 
-#https://edotor.net/
-
 digraph DFA {
     rankdir=LR;
     node [shape=circle];
+
+    # Estado inicial e final
+    q0 [shape=doublecircle, label="q0 (inicial)"];
+
+    # Estados para identificadores e variáveis
+    q1 [label="q1 (identificador)"];
+    q2 [label="q2 (=)"];
+    q3 [label="q3 (expressão)"];
+    q4 [label="q4 (;)"];
+
+    # Estados para declaração de variáveis
+    q5 [label="q5 (tipo)"];
+    q6 [label="q6 (identificador lista)"];
+    q7 [label="q7 (, identificador)"];
+
+    # Estados para impressão (print)
+    q8 [label="q8 (print)"];
+    q9 [label="q9 (identificador)"];
+
+    # Estados para condições (if, while)
+    q10 [label="q10 (if)"];
+    q11 [label="q11 (condição)"];
+    q12 [label="q12 ({)"];
+    q13 [label="q13 (programa)"];
+    q14 [label="q14 (})"];
+    q15 [label="q15 (else)"];
     
-    q0 [shape=doublecircle];
-    q0 [label="q0 (inicial)"];
-    q1 [label="q1"];
-    q2 [label="q2"];
-    q3 [label="q3"];
-    q4 [label="q4"];
-    q5 [label="q5"];
+    # Estados para laço (while)
+    q16 [label="q16 (while)"];
     
+    # Transições
+    # Atribuição
     q0 -> q1 [label="identificador"];
     q1 -> q2 [label="="];
-    q2 -> q3 [label="número"];
-    q3 -> q0 [label=";"];
-    
-    q0 -> q4 [label="print"];
-    q4 -> q5 [label="identificador"];
-    q5 -> q0 [label=";"];
+    q2 -> q3 [label="expressão"];
+    q3 -> q4 [label=";"];
+    q4 -> q0 [label="retorno ao inicial"];
+
+    # Declaração de variáveis
+    q0 -> q5 [label="tipo"];
+    q5 -> q6 [label="identificador"];
+    q6 -> q4 [label=";"];
+    q6 -> q7 [label=","];
+    q7 -> q6 [label="identificador"];
+
+    # Impressão
+    q0 -> q8 [label="print"];
+    q8 -> q9 [label="identificador"];
+    q9 -> q4 [label=";"];
+
+    # Condicional (if)
+    q0 -> q10 [label="if"];
+    q10 -> q11 [label="(condição)"];
+    q11 -> q12 [label="{"];
+    q12 -> q13 [label="programa"];
+    q13 -> q14 [label="}"];
+    q14 -> q0 [label="retorno ao inicial"];
+
+    # Condicional com else
+    q14 -> q15 [label="else"];
+    q15 -> q12 [label="{"];
+    q13 -> q14 [label="}"];
+
+    # Laço (while)
+    q0 -> q16 [label="while"];
+    q16 -> q11 [label="(condição)"];
+    q11 -> q12 [label="{"];
+    q13 -> q14 [label="}"];
 }
