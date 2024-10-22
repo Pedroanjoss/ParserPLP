@@ -1,56 +1,71 @@
-<programa> ::= <comentario> <programa> 
-             | <instrucao> $OPE_FIN$ <programa> 
-             | <instrucao> $OPE_FIN$
+<programa> ::= <comentario> " " <programa> 
+             | <instrucao> ";" <programa> 
+             | <instrucao> ";"
 
-<comentario> ::= $INST_HASH$ <texto_comentario>
+<comentario> ::= "#" <texto_comentario>
+
 
 <texto_comentario> ::= <letra_digito> 
+
                      | <letra_digito> <texto_comentario>
 
+
 <instrucao> ::= <atribuicao> 
+
               | <declaracao> 
+
               | <condicional> 
+
               | <laco> 
+
               | <impressao>
 
-<atribuicao> ::= <identificador> $OPE_ATR$ <expressao>
 
-<declaracao> ::= <tipo> <identificador_lista>
+<atribuicao> ::= <identificador> "=" <expressao>
 
-<tipo> ::= $TIPO_INT$ | $TIPO_FLOAT$
+<declaracao> ::= <tipo> " " <identificador_lista>
+
+<tipo> ::= "int" | "float"
 
 <identificador_lista> ::= <identificador> 
-                        | <identificador> $OPE_VIR$ <identificador_lista>
+                        | <identificador> "," <identificador_lista>
 
-<condicional> ::= $INST_IF$ $ABR_PAR$ <condicao> $FEC_PAR$ $ABR_CHA$ <programa> $FEC_CHA$ 
-                | $INST_IF$ $ABR_PAR$ <condicao> $FEC_PAR$ $ABR_CHA$ <programa> $FEC_CHA$ $INST_ELSE$ $ABR_CHA$ <programa> $FEC_CHA$
+<condicional> ::= "if" " " "(" <condicao> ")" " " "{" <programa> "}" 
+                | "if" " " "(" <condicao> ")" " " "{" <programa> "}" " " "else" " " "{" <programa> "}"
 
-<laco> ::= $INST_WHILE$ $ABR_PAR$ <condicao> $FEC_PAR$ $ABR_CHA$ <programa> $FEC_CHA$
+<laco> ::= "while" "(" <condicao> ")" " " "{" <programa> "}"
 
-<impressao> ::= $INST_PRINT$ $ABR_PAR$ <identificador> $FEC_PAR$ 
-              | $INST_PRINT$ <identificador>
+<impressao> ::= "print" "(" <identificador> ")" 
+              | "print" " " <identificador>
 
 <expressao> ::= <termo> 
               | <termo> <operador> <expressao>
 
 <condicao> ::= <expressao> <operador_relacional> <expressao>
 
+
 <termo> ::= <identificador> | <numero>
+
 
 <identificador> ::= <letra> <identificador_aux>
 
+
 <identificador_aux> ::= <letra_digito> 
+
                       | <letra_digito> <identificador_aux>
 
+
 <numero> ::= <digito> 
-           | <digito> $OPE_PTO$ <digito>
+           | <digito> "." <digito>
 
-<letra_digito> ::= <letra> | <digito>
+<letra_digito> ::= <letra> | <digitoUnico>
 
-<letra> ::= $LETRA_MIN$ | $LETRA_MAI$
+<letra> ::= [a-z] | [A-Z]
 
-<digito> ::= $DIGITO$
+<digito> ::= [0-9] | [0-9] [0-9] | [0-9] [0-9] [0-9]
 
-<operador> ::= $OPE_ARI_SOM$ | $OPE_ARI_SUB$ | $OPE_ARI_MUL$ | $OPE_ARI_DIV$
+<digitoUnico> ::= [0-9]
 
-<operador_relacional> ::= $OPE_REL_MAI$ | $OPE_REL_MEN$ | $OPE_REL_IGU$ | $OPE_REL_DIF$ | $OPE_REL_MAIG$ | $OPE_REL_MEIG$
+<operador> ::= "+" | "-" | "*" | "/"
+
+<operador_relacional> ::= ">" | "<" | "==" | "!=" | ">=" | "<="
