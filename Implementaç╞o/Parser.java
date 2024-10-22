@@ -1,7 +1,9 @@
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
-// Enum para os tipos de tokens que o analisador léxico irá gerar
 enum TokenType {
     IDENT,          // Identificadores (variáveis, funções)
     NUM_INT,        // Números inteiros
@@ -26,18 +28,28 @@ enum TokenType {
     COMENTARIO      // Comentário
 }
 
-// Classe que representa um token
-class Token {
-    TokenType tipo;
-    String valor;
-
-    Token(TokenType tipo, String valor) {
-        this.tipo = tipo;
-        this.valor = valor;
-    }
+enum Estado {
+    Q0,    // Estado inicial e de aceitação
+    Q1,    // Após ler um identificador
+    Q2,    // Após ler '='
+    Q3,    // Após ler um número
+    Q4,    // Após ler 'print'
+    Q5,    // Após ler um identificador para 'print'
+    Q6,    // Para operadores relacionais
+    Q7,    // Para operadores de soma
+    Q8,    // Para abrir parênteses
+    Q9,    // Para fechar parênteses
+    Q10,   // Para abrir chaves
+    Q11,   // Para fechar chaves
+    Q12,   // Para tipos como int e float
+    Q13,   // Para palavras-chave como 'if' e 'while'
+    Q14,   // Para ponto e vírgula
+    Q15,   // Para comentários
+    ERRO   // Estado de erro
 }
 
 public class Parser {
+
     public static void main(String[] args) {
         if (args.length != 1) {
             System.out.println("Uso: java Parser <nome-do-arquivo>");
@@ -45,258 +57,181 @@ public class Parser {
         }
 
         String nomeArquivo = args[0];
-        StringBuilder entrada = new StringBuilder();  // Utiliza StringBuilder
+        String entrada = "";
 
         Parser p = new Parser();
 
         try (BufferedReader leitor = new BufferedReader(new FileReader(nomeArquivo))) {
             String linha;
             while ((linha = leitor.readLine()) != null)
-                entrada.append(linha).append("\n");  // Usa append para maior eficiência
-
+                entrada += linha;
         } catch (IOException e) {
             System.out.println("Erro ao ler o arquivo: " + e.getMessage());
             return;
         }
 
-        boolean resultado = p.processar(entrada.toString());
-        System.out.println("Entrada " + (resultado ? "válida" : "inválida"));
+        boolean resultado = p.processar(entrada);
+        System.out.println("Entrada " + (resultado ? "valida" : "invalida"));
     }
 
-    // Função que remove espaços em branco e novas linhas, exceto quando necessário
-    private String removerEspacos(String entrada) {
-        return entrada.replaceAll("\\s+", " ").trim();  // Substitui múltiplos espaços
-    }
-
-    private List<Token> tokenizar(String entrada) {
-        List<Token> tokens = new ArrayList<>();
+    private List<String> tokenizar(String entrada) {
+        List<String> tokens = new ArrayList<>();
         int i = 0;
 
         while (i < entrada.length()) {
             char charAtual = entrada.charAt(i);
 
-            if (Character.isWhitespace(charAtual)) {
-                i++;  // Ignora espaços em branco
-                continue;
-            }
-
-            if (charAtual == '#') {  // Início de um comentário
-                while (i < entrada.length() && entrada.charAt(i) != '\n') {
-                    i++; // Ignora o comentário até o fim da linha
-                }
-                tokens.add(new Token(TokenType.COMENTARIO, "# Comentário"));
-                continue;
-            }
-
-            if (Character.isLetter(charAtual)) {  // Identificador
+            if (Character.isLetter(charAtual)) {  // Identificadores e palavras-chave
                 StringBuilder identificador = new StringBuilder();
-                while (i < entrada.length() && (Character.isLetter(entrada.charAt(i)) || Character.isDigit(entrada.charAt(i)))) {
+                while (i < entrada.length() && Character.isLetter(entrada.charAt(i))) {
                     identificador.append(entrada.charAt(i));
                     i++;
                 }
-                String id = identificador.toString();
-                switch (id) {
-                    case "print":
-                        tokens.add(new Token(TokenType.INST_PRINT, id));
-                        break;
-                    case "if":
-                        tokens.add(new Token(TokenType.INST_IF, id));
-                        break;
-                    case "else":
-                        tokens.add(new Token(TokenType.INST_ELSE, id));
-                        break;
-                    case "while":
-                        tokens.add(new Token(TokenType.INST_WHILE, id));
-                        break;
-                    case "int":
-                        tokens.add(new Token(TokenType.TIPO_INT, id));
-                        break;
-                    case "float":
-                        tokens.add(new Token(TokenType.TIPO_FLOAT, id));
-                        break;
-                    default:
-                        tokens.add(new Token(TokenType.IDENT, id));
+                String token = identificador.toString();
+                if (token.equals("int") || token.equals("float")) {
+                    tokens.add("TIPO_" + token.toUpperCase());
+                } else if (token.equals("if") || token.equals("else") || token.equals("while") || token.equals("print")) {
+                    tokens.add("INST_" + token.toUpperCase());
+                } else {
+                    tokens.add("IDENT");
                 }
-            } else if (Character.isDigit(charAtual)) {  // Número inteiro
+            } else if (Character.isDigit(charAtual)) {  // Números
                 StringBuilder numero = new StringBuilder();
                 while (i < entrada.length() && Character.isDigit(entrada.charAt(i))) {
                     numero.append(entrada.charAt(i));
                     i++;
                 }
-                tokens.add(new Token(TokenType.NUM_INT, numero.toString()));
+                tokens.add("NUM_INT");
             } else if (charAtual == '=') {
-                tokens.add(new Token(TokenType.OP_ATR, "="));
+                tokens.add("OP_ATR");
                 i++;
             } else if (charAtual == '+') {
-                tokens.add(new Token(TokenType.OP_SOM, "+"));
+                tokens.add("OP_SOM");
                 i++;
-            } else if (charAtual == ';') {
-                tokens.add(new Token(TokenType.PONTO_VIRGULA, ";"));
-                i++;
-            } else if (charAtual == '{') {
-                tokens.add(new Token(TokenType.ABR_CHA, "{"));
-                i++;
-            } else if (charAtual == '}') {
-                tokens.add(new Token(TokenType.FEC_CHA, "}"));
-                i++;
-            } else if (charAtual == '<') {
-                if (i + 1 < entrada.length() && entrada.charAt(i + 1) == '=') {
-                    tokens.add(new Token(TokenType.OP_REL_MEIG, "<="));
-                    i += 2;
-                } else {
-                    tokens.add(new Token(TokenType.OP_REL_MEN, "<"));
-                    i++;
-                }
             } else if (charAtual == '>') {
                 if (i + 1 < entrada.length() && entrada.charAt(i + 1) == '=') {
-                    tokens.add(new Token(TokenType.OP_REL_MAIG, ">="));
+                    tokens.add("OP_REL_MAIG");
                     i += 2;
                 } else {
-                    tokens.add(new Token(TokenType.OP_REL_MAI, ">"));
+                    tokens.add("OP_REL_MAI");
                     i++;
                 }
+            } else if (charAtual == '<') {
+                if (i + 1 < entrada.length() && entrada.charAt(i + 1) == '=') {
+                    tokens.add("OP_REL_MEIG");
+                    i += 2;
+                } else {
+                    tokens.add("OP_REL_MEN");
+                    i++;
+                }
+            } else if (charAtual == '(') {
+                tokens.add("ABR_PAR");
+                i++;
+            } else if (charAtual == ')') {
+                tokens.add("FEC_PAR");
+                i++;
+            } else if (charAtual == '{') {
+                tokens.add("ABR_CHA");
+                i++;
+            } else if (charAtual == '}') {
+                tokens.add("FEC_CHA");
+                i++;
+            } else if (charAtual == ',') {
+                tokens.add("VIRGULA");
+                i++;
+            } else if (charAtual == ';') {
+                tokens.add("PONTO_VIRGULA");
+                i++;
+            } else if (charAtual == '#') {  // Comentário de uma linha
+                while (i < entrada.length() && entrada.charAt(i) != '\n') {
+                    i++;
+                }
+                tokens.add("COMENTARIO");
             } else {
-                i++; // Ignora outros caracteres
+                i++;
             }
         }
+
         return tokens;
     }
 
-    private Estado transitar(Estado estado, Token token) {
+    private Estado transitar(Estado estado, String token) {
         switch (estado) {
             case Q0:
-                if (token.tipo == TokenType.INST_IF) {
-                    return Estado.Q1;  // Instrução if
-                } else if (token.tipo == TokenType.INST_WHILE) {
-                    return Estado.Q2;  // Instrução while
-                } else if (token.tipo == TokenType.INST_PRINT) {
-                    return Estado.Q3;  // Instrução print
-                } else if (token.tipo == TokenType.IDENT) {
-                    return Estado.Q9;  // Instrução de atribuição
-                } else if (token.tipo == TokenType.TIPO_INT || token.tipo == TokenType.TIPO_FLOAT) {
-                    return Estado.Q10; // Declaração de variável
+                if (token.equals("INST_PRINT")) {
+                    return Estado.Q4;
+                } else if (token.equals("IDENT")) {
+                    return Estado.Q1;
+                } else if (token.equals("INST_IF") || token.equals("INST_WHILE")) {
+                    return Estado.Q13;
                 }
                 break;
-                
-            case Q1: // Instrução if
-                if (token.tipo == TokenType.ABR_PAR) {
-                    return Estado.Q4;  // Espera '(' após if
+            case Q1:
+                if (token.equals("OP_ATR")) {
+                    return Estado.Q2;
                 }
                 break;
-                
-            case Q2: // Instrução while
-                if (token.tipo == TokenType.ABR_PAR) {
-                    return Estado.Q4;  // Espera '(' após while
+            case Q2:
+                if (token.equals("NUM_INT")) {
+                    return Estado.Q3;
                 }
                 break;
-                
-            case Q3: // Instrução print
-                if (token.tipo == TokenType.ABR_PAR) {
-                    return Estado.Q11; // Espera '(' após print
+            case Q3:
+                if (token.equals("PONTO_VIRGULA")) {
+                    return Estado.Q0;
                 }
                 break;
-                
-            case Q4: // Espera a condição
-                if (token.tipo == TokenType.NUM_INT || token.tipo == TokenType.IDENT) {
-                    return Estado.Q5;  // Transição para verificar a expressão condicional
+            case Q4:
+                if (token.equals("IDENT")) {
+                    return Estado.Q5;
                 }
                 break;
-                
-            case Q5: // Espera um operador relacional
-                if (token.tipo == TokenType.OP_REL_MAI || token.tipo == TokenType.OP_REL_MAIG || token.tipo == TokenType.OP_REL_MEN || token.tipo == TokenType.OP_REL_MEIG) {
-                    return Estado.Q6;  // Espera o segundo operando
+            case Q5:
+                if (token.equals("PONTO_VIRGULA")) {
+                    return Estado.Q0;
                 }
                 break;
-                
-            case Q6: // Espera o segundo operando
-                if (token.tipo == TokenType.NUM_INT || token.tipo == TokenType.IDENT) {
-                    return Estado.Q7;  // Verificação da condição completa
+            case Q13:
+                if (token.equals("ABR_PAR")) {
+                    return Estado.Q8;
                 }
                 break;
-                
-            case Q7: // Espera chave aberta '{'
-                if (token.tipo == TokenType.ABR_CHA) {
-                    return Estado.Q12;  // Bloco de instrução
+            case Q8:
+                if (token.equals("IDENT") || token.equals("NUM_INT")) {
+                    return Estado.Q9;
                 }
                 break;
-                
-            case Q9: // Instrução de atribuição
-                if (token.tipo == TokenType.OP_ATR) {
-                    return Estado.Q13; // Espera a expressão após o '='
+            case Q9:
+                if (token.equals("FEC_PAR")) {
+                    return Estado.Q10;
                 }
                 break;
-                
-            case Q10: // Declaração de variável
-                if (token.tipo == TokenType.IDENT) {
-                    return Estado.Q14; // Espera o identificador da variável
+            case Q10:
+                if (token.equals("ABR_CHA")) {
+                    return Estado.Q0;
                 }
                 break;
-                
-            case Q11: // Espera o conteúdo dentro de 'print'
-                if (token.tipo == TokenType.IDENT || token.tipo == TokenType.NUM_INT) {
-                    return Estado.Q15; // Conteúdo para print
-                }
-                break;
-                
-            case Q12: // Dentro de um bloco de instrução (chaves)
-                if (token.tipo == TokenType.FEC_CHA) {
-                    return Estado.Q0;  // Fecha o bloco de instrução
-                }
-                break;
-                
-            case Q13: // Espera o valor de atribuição após '='
-                if (token.tipo == TokenType.NUM_INT || token.tipo == TokenType.IDENT) {
-                    return Estado.Q0;  // Atribuição completa
-                }
-                break;
-                
-            case Q14: // Declaração de variável
-                if (token.tipo == TokenType.PONTO_VIRGULA) {
-                    return Estado.Q0;  // Declaração completa
-                }
-                break;
-                
-            case Q15: // Print
-                if (token.tipo == TokenType.FEC_PAR) {
-                    return Estado.Q0;  // Conclui a instrução de print
-                }
-                break;
+            default:
+                return Estado.ERRO;
         }
-        return Estado.ERRO; // Estado de erro se nenhum padrão for atendido
+        return Estado.ERRO;
     }
-    
 
     private boolean processar(String entrada) {
-        entrada = removerEspacos(entrada);
-        List<Token> tokens = tokenizar(entrada);
+        Estado estadoAtual = Estado.Q0;
+        Estado[] estadosFinais = {Estado.Q0};
 
-        Estado estado = Estado.Q0;
-        for (Token token : tokens) {
-            estado = transitar(estado, token);
-            if (estado == Estado.ERRO) {
+        List<String> tokens = tokenizar(entrada);
+        for (String token : tokens) {
+            estadoAtual = transitar(estadoAtual, token);
+            if (estadoAtual == Estado.ERRO)
                 return false;
-            }
         }
-        return estado == Estado.Q0 || estado == Estado.Q7 || estado == Estado.Q12;  // Estado final aceitável
-    }
 
-    enum Estado {
-        Q0,  // Estado inicial
-        Q1,  // Estado para instrução if
-        Q2,  // Estado para instrução while
-        Q3,  // Estado para instrução print
-        Q4,  // Espera '(' após if ou while
-        Q5,  // Estado para expressão condicional
-        Q6,  // Espera ')' após a condição
-        Q7,  // Bloco de instrução (abre chaves)
-        Q8,  // Estado para expressão while
-        Q9,
-        Q10,
-        Q11,
-        Q12, // Estado final (instrução concluída)
-        Q13,
-        Q14,
-        Q15,
-        ERRO // Estado de erro
+        for (Estado estadoFinal : estadosFinais) {
+            if (estadoAtual == estadoFinal)
+                return true;
+        }
+        return false;
     }
 }

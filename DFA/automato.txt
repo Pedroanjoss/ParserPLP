@@ -27,10 +27,14 @@ digraph DFA {
     q13 [label="q13 (programa)"];
     q14 [label="q14 (})"];
     q15 [label="q15 (else)"];
-    
+
     # Estados para laço (while)
     q16 [label="q16 (while)"];
-    
+
+    # Estados para comentários
+    q17 [label="q17 (#)"];
+    q18 [label="q18 (texto de comentário)"];
+
     # Transições
     # Atribuição
     q0 -> q1 [label="identificador"];
@@ -54,7 +58,6 @@ digraph DFA {
     # Condicional (if)
     q0 -> q10 [label="if"];
     q10 -> q11 [label="(condição)"];
-    q11 -> q12 [label="{"];
     q12 -> q13 [label="programa"];
     q13 -> q14 [label="}"];
     q14 -> q0 [label="retorno ao inicial"];
@@ -62,11 +65,16 @@ digraph DFA {
     # Condicional com else
     q14 -> q15 [label="else"];
     q15 -> q12 [label="{"];
-    q13 -> q14 [label="}"];
 
     # Laço (while)
     q0 -> q16 [label="while"];
     q16 -> q11 [label="(condição)"];
     q11 -> q12 [label="{"];
-    q13 -> q14 [label="}"];
+    
+
+    # Comentários
+    q0 -> q17 [label="#"];
+    q17 -> q18 [label="texto de comentário"];
+    q18 -> q18 [label="qualquer caractere"];
+    q18 -> q0 [label="nova linha"];
 }
