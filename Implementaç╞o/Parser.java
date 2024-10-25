@@ -192,11 +192,11 @@ public class Parser {
                     return Estado.Q4;
                 } else if (token.equals("IDENT")) {
                     return Estado.Q1;
-                } else if (token.equals("INST_IF") || token.equals("INST_WHILE")) {
+                } else if (token.equals("INST_IF") || token.equals("INST_WHILE") || token.equals("INST_ELSE")) {
                     return Estado.Q13; // Lidar com if e while
                 } else if (token.equals("TIPO_INT") || token.equals("TIPO_FLOAT")) {
                     return Estado.Q12; // Espera um identificador após um tipo
-                }  else if (token.equals("ABR_CHA")|| token.equals("FEC_CHA")) { // Se for uma abertura de chaves
+                } else if (token.equals("ABR_CHA") || token.equals("FEC_CHA")) { // Se for uma abertura de chaves
                     return Estado.Q0; // Transita para o estado de abertura de chaves
                 }
 
@@ -204,13 +204,19 @@ public class Parser {
             case Q1:
                 if (token.equals("OP_ATR")) {
                     return Estado.Q2;
+                } else if (token.equals("PONTO_VIRGULA")) {
+                    return Estado.Q0; // Finaliza a declaração da variável sem valor
+                } else if (token.equals("NUM_INT") || token.equals("NUM_FLOAT")) {
+                    return Estado.Q2; // Aceita números após IDENT
                 } else if (token.startsWith("OP_REL")) { // Operadores relacionais
                     return Estado.Q6; // Transição para o estado de operadores relacionais
                 }
                 break;
             case Q2:
                 if (token.equals("NUM_INT") || token.equals("NUM_FLOAT")) {
-                    return Estado.Q3;
+                    return Estado.Q3; // Aceita o número e vai para o estado Q3
+                } else if (token.equals("PONTO_VIRGULA")) {
+                    return Estado.Q0; // Aceita ponto e vírgula diretamente após o operador de atribuição
                 }
                 break;
             case Q3:
@@ -251,13 +257,16 @@ public class Parser {
                     return Estado.Q1; // Espera um identificador após o tipo
                 }
                 break;
-            case Q13: // Para palavras-chave como 'if' e 'while'
+            case Q13: // Para palavras-chave como 'if', 'while' e 'else'
                 if (token.equals("ABR_PAR")) {
                     return Estado.Q14; // Espera abrir parênteses
                 } else if (token.equals("INST_ELSE")) {
                     return Estado.Q10; // Espera abrir chave ou instrução após else
+                } else if (token.equals("ABR_CHA")) {
+                    return Estado.Q0; // Transita para o estado de abrir chaves
+                } else {
+                    return Estado.ERRO; // Caso contrário, retorna erro
                 }
-                break;
             case Q14: // Lê expressões dentro de parênteses
                 if (token.equals("IDENT") || token.equals("NUM_INT") || token.equals("NUM_FLOAT")) {
                     return Estado.Q14; // Espera um número ou identificador após um operador relacional
@@ -273,12 +282,11 @@ public class Parser {
                 }
                 break;
             case Q10: // abre chaves
-                if ( token.equals("NUM_INT") || token.equals("NUM_FLOAT")) {
+                if (token.equals("NUM_INT") || token.equals("NUM_FLOAT")) {
                     return Estado.Q2; // Volta para o estado inicial após abrir chave
                 } else {
                     return Estado.Q0; // Volta para o estado inicial após fechar chave
                 }
-
 
             default:
                 return Estado.ERRO;
