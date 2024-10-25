@@ -210,6 +210,9 @@ public class Parser {
                     return Estado.Q2; // Aceita números após IDENT
                 } else if (token.startsWith("OP_REL")) { // Operadores relacionais
                     return Estado.Q6; // Transição para o estado de operadores relacionais
+                } else if (token.equals("OP_SOM") || token.equals("OP_SUB") || token.equals("OP_MUL") || token.equals("OP_DIV")) {
+                    // Se encontrar qualquer operador matemático, retorna para o estado Q2
+                    return Estado.Q1;
                 }
                 break;
             case Q2:
@@ -217,11 +220,16 @@ public class Parser {
                     return Estado.Q3; // Aceita o número e vai para o estado Q3
                 } else if (token.equals("PONTO_VIRGULA")) {
                     return Estado.Q0; // Aceita ponto e vírgula diretamente após o operador de atribuição
+                } else if (token.equals("IDENT")) {
+                    return Estado.Q3;
                 }
                 break;
             case Q3:
                 if (token.equals("PONTO_VIRGULA")) {
                     return Estado.Q0;
+                } else if (token.equals("OP_SOM") || token.equals("OP_SUB") || token.equals("OP_MUL") || token.equals("OP_DIV")) {
+                    // Se encontrar qualquer operador matemático, retorna para o estado Q2
+                    return Estado.Q2;
                 }
                 break;
             case Q4:
