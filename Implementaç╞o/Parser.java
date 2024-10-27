@@ -24,13 +24,12 @@ enum TokenType {
     TIPO_INT, // Tipo int
     TIPO_FLOAT, // Tipo float
     VIRGULA, // Vírgula ','
-    PONTO_VIRGULA, // Ponto e vírgula ';'
+    QUEBRA_LINHA, // Reconhece o fim da linha
     INST_IF, // Instrução "if"
     INST_ELSE, // Instrução "else"
     INST_WHILE, // Instrução "while"
     INST_PRINT, // Instrução "print"
-    COMENTARIO, // Comentário
-    COMENTARIO_MULTI // Comentário multilinha
+    COMENTARIO, // Comentário (Início e fim de comentário)
 }
 
 enum Estado {
@@ -51,12 +50,14 @@ enum Estado {
     Q14, // Para expressões dentro de parênteses
     Q15, // Para ponto e vírgula
     Q16, // Para operadores relacionais após um identificador
+    Q17, // Para analisa de comentários
     ERRO // Estado de erro
 }
 
 public class Parser {
 
     public static void main(String[] args) {
+        // Adiciona o Caminho do arquivo
         args = new String[] { "Implementaç╞o/programa2.plp" };
         if (args.length != 1) {
             args[0] = ("programa2.plp");
@@ -68,6 +69,7 @@ public class Parser {
 
         Parser p = new Parser();
 
+        // Ler o arquivo .plp
         try (BufferedReader leitor = new BufferedReader(new FileReader(nomeArquivo))) {
             String linha;
             while ((linha = leitor.readLine()) != null) {
@@ -82,6 +84,7 @@ public class Parser {
         System.out.println("Entrada " + (resultado ? "válida" : "inválida"));
     }
 
+    // Realização das operações para atribuição de Tokens
     private List<String> tokenizar(String entrada) {
         List<String> tokens = new ArrayList<>();
         int i = 0;
@@ -91,9 +94,29 @@ public class Parser {
 
             // Ignora espaços em branco
             if (Character.isWhitespace(charAtual)) {
+                if (charAtual == '\n') {
+                    tokens.add("QUEBRA_LINHA");
+                }
                 i++;
                 continue;
             }
+             // Início e fim de um comentário com HASHTAG
+        if (charAtual == '#') {
+            tokens.add("COMENTARIO");
+            i++;
+
+            // Ignorar caracteres até encontrar o final do comentário (outro #) ou o final da linha
+            while (i < entrada.length() && entrada.charAt(i) != '#') {
+                i++;
+            }
+
+            // Adicionar "HASHTAG" no final do comentário
+            if (i < entrada.length() && entrada.charAt(i) == '#') {
+                tokens.add("COMENTARIO");
+                i++;
+            }
+            continue; // Ignora o resto da linha
+        }
 
             // Identificadores e palavras-chave
             if (Character.isLetter(charAtual)) {
@@ -173,8 +196,8 @@ public class Parser {
             } else if (charAtual == '}') {
                 tokens.add("FEC_CHA");
                 i++;
-            } else if (charAtual == ';') {
-                tokens.add("PONTO_VIRGULA");
+            }else if (charAtual == ',') {
+                tokens.add("VIRGULA");
                 i++;
             } else {
                 System.out.println("Erro: Caractere inesperado '" + charAtual + "' encontrado.");
@@ -198,13 +221,18 @@ public class Parser {
                     return Estado.Q12; // Espera um identificador após um tipo
                 } else if (token.equals("ABR_CHA") || token.equals("FEC_CHA")) { // Se for uma abertura de chaves
                     return Estado.Q0; // Transita para o estado de abertura de chaves
+                } else if (token.equals("COMENTARIO")){
+                    return Estado.Q17;
+                } else if (token.equals("QUEBRA_LINHA")){
+                    return Estado.Q0;
+                }   else if (token.equals("VIRGULA")) {
+                    return Estado.Q12;
                 }
-
                 break;
             case Q1:
                 if (token.equals("OP_ATR")) {
                     return Estado.Q2;
-                } else if (token.equals("PONTO_VIRGULA")) {
+                } else if (token.equals("QUEBRA_LINHA")) {
                     return Estado.Q0; // Finaliza a declaração da variável sem valor
                 } else if (token.equals("NUM_INT") || token.equals("NUM_FLOAT")) {
                     return Estado.Q2; // Aceita números após IDENT
@@ -213,19 +241,21 @@ public class Parser {
                 } else if (token.equals("OP_SOM") || token.equals("OP_SUB") || token.equals("OP_MUL") || token.equals("OP_DIV")) {
                     // Se encontrar qualquer operador matemático, retorna para o estado Q2
                     return Estado.Q1;
+                } else if (token.equals("VIRGULA")){
+                    return Estado.Q12;
                 }
                 break;
             case Q2:
                 if (token.equals("NUM_INT") || token.equals("NUM_FLOAT")) {
                     return Estado.Q3; // Aceita o número e vai para o estado Q3
-                } else if (token.equals("PONTO_VIRGULA")) {
+                } else if (token.equals("QUEBRA_LINHA")) {
                     return Estado.Q0; // Aceita ponto e vírgula diretamente após o operador de atribuição
                 } else if (token.equals("IDENT")) {
                     return Estado.Q3;
                 }
                 break;
             case Q3:
-                if (token.equals("PONTO_VIRGULA")) {
+                if (token.equals("QUEBRA_LINHA")) {
                     return Estado.Q0;
                 } else if (token.equals("OP_SOM") || token.equals("OP_SUB") || token.equals("OP_MUL") || token.equals("OP_DIV")) {
                     // Se encontrar qualquer operador matemático, retorna para o estado Q2
@@ -240,7 +270,7 @@ public class Parser {
                 }
                 break;
             case Q5:
-                if (token.equals("PONTO_VIRGULA")) {
+                if (token.equals("QUEBRA_LINHA")) {
                     return Estado.Q0;
                 }
                 break;
@@ -252,7 +282,7 @@ public class Parser {
             case Q9: // Após ler um identificador ou número dentro dos parênteses
                 if (token.equals("FEC_PAR")) {
                     return Estado.Q0; // Retorna ao estado inicial após fechar parênteses
-                } else if (token.equals("PONTO_VIRGULA")) {
+                } else if (token.equals("QUEBRA_LINHA")) {
                     return Estado.Q0; // Permite que um print finalize sem fechar parênteses
                 } else if (token.equals("OP_REL_MAI") || token.equals("OP_REL_MAIG") ||
                         token.equals("OP_REL_MEN") || token.equals("OP_REL_MEIG") ||
@@ -261,7 +291,7 @@ public class Parser {
                 }
                 break;
             case Q12: // Depois de ler um tipo (int ou float)
-                if (token.equals("IDENT")) {
+                if (token.equals("IDENT") || token.equals("VIRGULA")) {
                     return Estado.Q1; // Espera um identificador após o tipo
                 }
                 break;
@@ -295,12 +325,19 @@ public class Parser {
                 } else {
                     return Estado.Q0; // Volta para o estado inicial após fechar chave
                 }
+                case Q17: // Estado de comentário
+            if (token.equals("COMENTARIO")) {
+                return Estado.Q0; // Encerra o comentário ao encontrar outra HASHTAG
+            } else {
+                return Estado.Q17; // Permanece em estado de comentário ignorando outros tokens
+            }
 
-            default:
-                return Estado.ERRO;
-        }
-        return Estado.ERRO;
+        default:
+            return Estado.ERRO;
     }
+    return Estado.ERRO;
+} 
+
 
     private boolean processar(String entrada) {
         Estado estadoAtual = Estado.Q0;
